@@ -1,0 +1,84 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
+description = 'Core'
+
+configurations { prepareSAP }
+
+task prepareSAP(dependsOn:configurations.prepareSAP)
+prepareSAP.doLast({
+    configurations.prepareSAP.resolvedConfiguration.resolvedArtifacts.each { artifact ->
+        //project.dependencies.add 'runtime', files("libs/${artifact.name}.${artifact.extension}")
+        println "*********** ${artifact.file} ************"
+        project.copy {
+            from artifact.file
+            into "libs"
+            rename { "${artifact.name}.${artifact.extension}" }
+        }
+    }
+})
+
+clean {
+    delete fileTree('libs').include("*sap*")
+}
+
+
+sourceSets {
+    main {
+        resources {
+            exclude '**/.gitignore'
+            exclude '**/logback.xml'
+            exclude '**/logback-test.xml'
+        }
+    }
+    test
+}
+
+
+dependencies {
+    // this needs to be in your maven-local or other custom repo
+    prepareSAP group: 'com.sap', name:'sapjco3', version:sapVersion
+    //prepareSAP group: 'com.sap', name:'sapjco3', version:sapVersion, classifier:'ntamd64', ext:'dll'
+    //prepareSAP group: 'com.sap', name:'libsapjco3', version:sapVersion, classifier:'darwinintel64', ext:'jnilib'
+    //prepareSAP group: 'com.sap', name:'libsapjco3', version:sapVersion, classifier:'linuxamd64', ext:'so'
+    runtime files("libs/sapjco3.jar") { builtBy prepareSAP }
+    compile group: 'org.mapdb', name: 'mapdb', version:mapdbVersion
+
+    compile project(':proj-model')
+    testCompile project(':proj-model')
+    compile 'org.redisson:redisson:3.2.3'
+    compile group: 'commons-net', name: 'commons-net', version:'3.3'
+    compile(group: 'org.apache.pdfbox', name: 'pdfbox', version:pdfboxVersion) { exclude(module: 'commons-logging') }
+    compile group: 'com.lowagie', name: 'itext', version:'1.4.8'
+    compile group: 'org.apache.poi', name: 'poi-ooxml', version:'3.12'
+    compile group: 'org.quartz-scheduler', name: 'quartz', version:'2.2.1'
+    compile group: 'org.javatuples', name: 'javatuples', version:'1.2'
+    //compile group: 'com.sun.media', name: 'jai_codec', version:'1.1.2_01'
+    compile group: 'org.slf4j', name: 'slf4j-api', version:slf4jVersion
+    runtime group: 'org.slf4j', name:'jcl-over-slf4j', version:slf4jVersion
+    runtime group: 'org.slf4j', name:'jul-to-slf4j', version:slf4jVersion
+    runtime group: 'org.slf4j', name:'log4j-over-slf4j', version:slf4jVersion
+    compile group: 'org.javassist', name: 'javassist', version:javassistVersion
+    compileOnly group: 'javax.mail', name: 'mail', version:mailVersion
+    runtime group: 'com.levigo.jbig2', name: 'levigo-jbig2-imageio', version: '1.6.5'
+    //runtime group: 'com.sun.jai', name: 'clibwrapper_jiio', version:'1.1'
+    //runtime group: 'com.sun.jai', name: 'libclib_jiio', version:'1.1', ext:'so'
+    testCompile group: 'org.powermock', name: 'powermock-api-mockito', version:'1.6.2'
+    testCompile group: 'org.powermock', name: 'powermock-module-testng', version:'1.6.2'
+    testCompile group: 'nl.jqno.equalsverifier', name: 'equalsverifier', version:equalsverifierVersion
+    testCompile group: 'org.apache.tomcat', name: 'tomcat-catalina', version:'8.0.24'
+    testCompile group: 'javax.mail', name: 'mail', version:mailVersion
+    testCompile group: 'org.hsqldb', name: 'hsqldb', version:hsqldbVersion
+    //testRuntime (group: 'org.hibernate', name: 'hibernate-c3p0', version:hibernateVersion) { exclude(module: 'c3p0') }
+    //testRuntime group: 'com.mchange', name: 'c3p0', version: c3p0Version
+}
+
+processResources {
+    filesNotMatching('**/*.ttf'){
+        filter (ReplaceTokens, tokens: [
+            "project.version": project.property('version')
+        ])
+    }
+    from(zipTree(project.configurations.compile.find { it.name.endsWith("shared-resources-${project.version}.jar") }))
+}
+
+jar { exclude 'hibernate.cfg.xml' }

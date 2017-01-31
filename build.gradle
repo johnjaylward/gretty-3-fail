@@ -1,0 +1,195 @@
+buildscript {
+    repositories {
+        // versions
+        jcenter()
+        // cobertura
+        mavenCentral()
+        maven { url 'https://plugins.gradle.org/m2/' }
+    }
+
+    dependencies {
+        classpath 'com.github.ben-manes:gradle-versions-plugin:0.11.3'
+        classpath 'net.saliman:gradle-cobertura-plugin:2.2.8'
+    }
+}
+
+plugins { id 'org.hidetake.ssh' version '2.5.1' }
+
+task wrapper(type: Wrapper) { gradleVersion = '3.3' }
+
+allprojects  {
+    apply plugin: 'maven'
+    apply plugin: 'eclipse'
+    // use 'gradle dependencyUpdates' to see updates for dependencies
+    apply plugin: 'com.github.ben-manes.versions'
+
+    group = 'proj'
+    version = '0.0.1-SNAPSHOT'
+}
+
+subprojects {
+    apply plugin: 'java'
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
+    task allDeps(type: DependencyReportTask) {}
+
+    eclipse {
+        classpath {
+            file {
+                withXml {
+                    def xmlparser = new XmlParser()
+                    def node = it.asNode()
+                    node.findAll { entry -> entry['@kind'] == 'src' }.each {
+                        println it
+                        def attributes = xmlparser.createNode(it, 'attributes', [:])
+                        // buildship management flag so it doesn't overwrite our settings
+                        xmlparser.createNode(attributes,'attribute',[
+                            name:'FROM_GRADLE_MODEL',
+                            value:'true'
+                        ])
+                        // ignore problems with generated code
+                        if (it['@path'].contains('generated')) {
+                            xmlparser.createNode(attributes,'attribute',[
+                                name:'ignore_optional_problems',
+                                value:'true'
+                            ])
+                        }
+                        // don't exclude any resources from Eclipse. Excludes are generally for release only (jar/war)
+                        if (it['@path'].contains('resources')) {
+                            it['@excluding'] = ''
+                        }
+                    }
+
+                    //delete all the static libs and use the buildship container instead
+                    node.findAll { entry -> entry['@kind'] == 'lib'}*.replaceNode{}
+                    xmlparser.createNode(node,'classpathentry',[ exported:'true', kind:'con', path:'org.eclipse.buildship.core.gradleclasspathcontainer' ])
+                }
+            }
+            downloadJavadoc = true
+            downloadSources = true
+            defaultOutputDir = project.buildDir
+        }
+    }
+
+    /*
+     * Dependency versions
+     */
+    ext.querydslVersion = '4.1.3'
+    ext.mysqlConnVersion = '5.1.38'
+    ext.hsqldbVersion = '2.3.4'
+    ext.pdfboxVersion = '2.0.2'
+    ext.slf4jVersion = '1.7.22'
+    ext.logbackVersion = '1.1.8'
+    ext.janinoVersion = '2.7.8'
+    ext.javassistVersion = '3.19.0-GA'
+    ext.equalsverifierVersion = '2.0.1'
+    ext.mapdbVersion = '1.0.8'
+    ext.hibernateVersion = '5.1.2.Final'
+    ext.servletApiVersion = '3.0.1'
+    ext.mailVersion = '1.4.7'
+    ext.c3p0Version = '0.9.5.2'
+    ext.sapVersion = '3.0.13'
+
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+
+    dependencies {
+        testCompile group: 'org.testng', name: 'testng', version:'6.9.6'
+        testCompile group: 'org.slf4j', name: 'slf4j-simple', version:slf4jVersion
+        testCompile group: 'org.slf4j', name: 'jcl-over-slf4j', version:slf4jVersion
+    }
+
+    test {
+        useTestNG {
+            parallel = 'tests'
+            threadCount = 20
+        }
+    }
+
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        classifier = 'javadoc'
+        from javadoc.destinationDir
+    }
+
+    artifacts {
+        archives sourcesJar
+        archives javadocJar
+    }
+
+}
+
+// apply style and bug check plugins to all java projects
+configure(subprojects.findAll{}) {
+    apply plugin: 'pmd'
+    apply plugin: 'checkstyle'
+    apply plugin: 'findbugs'
+    apply plugin: 'cobertura'
+
+    cobertura {
+        // toolVersion= '2.0.3'
+        coverageFormats = ['xml' , 'html']
+    }
+
+    pmd {
+        toolVersion = '5.5.2'
+        ruleSetFiles = files("$rootProject.projectDir/config/pmd/ruleSet.xml")
+        sourceSets = [
+            sourceSets.main
+        ]
+        ignoreFailures = true
+    }
+
+    checkstyle {
+        //toolVersion = '6.15'
+        configFile = file("$rootProject.projectDir/config/checkstyle/checkstyle.xml")
+        configProperties['checkstyle.suppressions.file'] = "$rootProject.projectDir/config/checkstyle/checkstyle-suppressions.xml"
+        sourceSets = [
+            sourceSets.main,
+            sourceSets.test
+        ]
+        ignoreFailures = true
+    }
+
+    findbugs {
+        //toolVersion = '3.0.0'
+        excludeFilter = file("$rootProject.projectDir/config/findbugs/excludeFilter.xml")
+        sourceSets = [
+            sourceSets.main,
+            sourceSets.test
+        ]
+        ignoreFailures = true
+    }
+}
+
+task javadoc(type: Javadoc) {
+    source subprojects.collect {project ->
+        project.sourceSets.main.allJava }
+    destinationDir = new File(buildDir, 'docs/javadoc')
+    // Might need a classpath
+    classpath = files(subprojects.collect {project ->
+        project.sourceSets.main.compileClasspath})
+}
+
+ssh.settings {
+    timeoutSec = 180
+}
+
+remotes {
+}
+
+task deploy
+deploy.doLast({
+    // deployment stuff goes here
+})
+
+deploy.dependsOn { project(':proj-command').jar }
+deploy.dependsOn { project(':proj-web').war }

@@ -1,0 +1,119 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+    dependencies {
+        // needed for compile jsb2
+        //classpath "com.extjs:jsb2-core:1.0"
+        // jetty integration
+        classpath 'org.akhikhl.gretty:gretty:+'
+    }
+}
+
+apply plugin: 'war'
+apply plugin: 'org.akhikhl.gretty'
+apply plugin: CompileJsb2Plugin
+
+import org.apache.tools.ant.filters.ReplaceTokens
+
+description = 'Web'
+
+sourceSets {
+    main {
+        resources {
+            exclude '**/jetty-env.xml'
+            exclude '**/tomcat-context.xml'
+            exclude '**/logback.xml'
+            exclude '**/logback-test.xml'
+        }
+    }
+}
+
+dependencies {
+    compile project(':proj-core')
+    compile( group: 'org.apache.struts', name: 'struts2-core', version:'2.5.8'){ exclude(module: 'javassist') }
+    runtime (group: 'org.hibernate', name: 'hibernate-c3p0', version:hibernateVersion) { exclude(module: 'c3p0') }
+    runtime group: 'com.mchange', name: 'c3p0', version: c3p0Version
+    runtime group: 'org.hibernate', name: 'hibernate-ehcache', version:hibernateVersion
+    runtime group: 'ch.qos.logback', name: 'logback-classic', version:logbackVersion
+    runtime group: 'org.codehaus.janino', name: 'janino', version:janinoVersion
+    runtime group: 'org.slf4j', name:'jcl-over-slf4j', version:slf4jVersion
+    runtime group: 'org.slf4j', name:'jcl-over-slf4j', version:slf4jVersion
+    runtime group: 'org.slf4j', name:'jul-to-slf4j', version:slf4jVersion
+    runtime group: 'org.slf4j', name:'log4j-over-slf4j', version:slf4jVersion
+    compileOnly group: 'javax.servlet', name: 'javax.servlet-api', version:servletApiVersion
+    providedCompile group: 'javax.mail', name: 'mail', version:mailVersion
+    providedRuntime group: 'mysql', name: 'mysql-connector-java', version:mysqlConnVersion
+}
+
+processResources {
+    filter (ReplaceTokens, tokens: [
+        "project.version": project.property('version')
+    ])
+    from(zipTree(project.configurations.compile.find { it.name.endsWith("shared-resources-${project.version}.jar") }))
+}
+
+war {
+    from ("$buildDir/scripts"){
+        into "scripts"
+        filter (ReplaceTokens, tokens: [
+            "project.version": project.property('version')
+        ])
+    }
+}
+
+gretty {
+    servletContainer = 'tomcat7'
+    contextPath = '/'
+    //    contextConfigFile="$projectDir/src/test/resources/jetty-env.xml"
+    contextConfigFile = "$projectDir/src/test/resources/tomcat-context.xml"
+
+    fastReload = false
+    recompileOnSourceChange = false
+    reloadOnClassChange = false
+    reloadOnConfigChange = false
+    reloadOnLibChange = false
+
+    enableNaming = true
+
+    debugSuspend = false
+
+    //extraResourceBase "${project.buildDir}/scripts"
+    extraResourceBase "${projectDir}/src/test/resources/"
+
+    afterEvaluate {
+        // here we can access Gretty tasks
+        println "******** GRETTY afterEvaluate **********"
+        (project.configurations.providedCompile + project.configurations.providedRuntime).collect().each {
+            println "******GRETTY******** $it ****************************"
+            appRun.classPath it
+            appRunWar.classPath it
+            appRunDebug.classPath it
+            appRunWarDebug.classPath it
+        }
+        appRun.classPath "${projectDir}/src/test/resources/"
+        appRunWar.classPath "${projectDir}/src/test/resources/"
+        appRunDebug.classPath "${projectDir}/src/test/resources/"
+        appRunWarDebug.classPath "${projectDir}/src/test/resources/"
+    }
+}
+
+class CompileJsb2Plugin implements Plugin<Project> {
+    void apply(Project project) {
+        project.compileJava.dependsOn 'compileJsb2'
+
+        project.task('compileJsb2') {
+            // gradle 2.x
+        	//inputs.sourceDir project.file("${project.projectDir}/src/main/javascript")
+        	// gradle 3.x
+            inputs.file(project.file("${project.projectDir}/src/main/javascript")).skipWhenEmpty()
+            outputs.dir project.file("${project.buildDir}/scripts")
+            doLast {
+                project.fileTree(dir:project.projectDir, include:'**/*.jsb2').collect().each {
+                    com.extjs.jsb2.core.JSBuilder2Core.build(it.absolutePath, project.buildDir.absolutePath, '-debug',true)
+                }
+            }
+        }
+    }
+}

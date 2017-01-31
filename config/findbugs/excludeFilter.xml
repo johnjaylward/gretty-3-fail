@@ -1,0 +1,20 @@
+<FindBugsFilter>
+  <Match>
+    <Package name="~.*\.sap\.core\..*" />
+    <Bug pattern="URF_UNREAD_FIELD,SS_SHOULD_BE_STATIC,UWF_UNWRITTEN_FIELD" />
+  </Match>
+  <Match>
+  	<Package name="~.*\.command.*" />
+  	<Bug pattern="DM_EXIT" />
+  </Match>
+  <Match>
+  	<Package name="~.*.model.util.json" />
+  </Match>
+  <Match>
+  	<Class name="~.*\.Q[A-Z].+" />
+  </Match>
+  <Match>
+  	<Class name="~.*Test" />
+  	<Bug pattern="UPM_UNCALLED_PRIVATE_METHOD" />
+  </Match>
+</FindBugsFilter>

@@ -1,0 +1,53 @@
+description = 'Command line tools'
+
+sourceSets {
+    main {
+        resources {
+            exclude '**/.gitignore'
+            exclude '**/logback.xml'
+            exclude '**/logback-test.xml'
+        }
+    }
+    // test
+}
+
+dependencies {
+    compile project(':proj-core')
+    compile group: 'com.martiansoftware', name: 'jsap', version:'2.1'
+    runtime (group: 'org.hibernate', name: 'hibernate-c3p0', version:hibernateVersion) { exclude(module: 'c3p0') }
+    runtime group: 'com.mchange', name: 'c3p0', version: c3p0Version
+    runtime group: 'org.hibernate', name: 'hibernate-ehcache', version:hibernateVersion
+    runtime group: 'ch.qos.logback', name: 'logback-classic', version:logbackVersion
+    runtime group: 'org.slf4j', name:'jcl-over-slf4j', version:slf4jVersion
+    runtime group: 'org.slf4j', name:'jul-to-slf4j', version:slf4jVersion
+    runtime group: 'org.slf4j', name:'log4j-over-slf4j', version:slf4jVersion
+    runtime group: 'org.codehaus.janino', name: 'janino', version:janinoVersion
+    runtime group: 'javax.servlet', name: 'javax.servlet-api', version:servletApiVersion
+    runtime group: 'javax.mail', name: 'mail', version:mailVersion
+    runtime group: 'mysql', name: 'mysql-connector-java', version:mysqlConnVersion
+}
+
+task zipDependencies (type:Zip, dependsOn: jar) {
+    from configurations.runtime.resolvedConfiguration.resolvedArtifacts.collect{ art -> art.file }
+    from configurations.runtime
+    from project(':proj-core').configurations.runtime
+    into (project.name + '-dependencies')
+    archiveName (project.name + '-dependencies-' + project.version + '.zip')
+}
+
+rootProject.deploy.dependsOn zipDependencies
+
+processResources {
+    from(zipTree(project.configurations.compile.find {
+        it.name.endsWith("shared-resources-${project.version}.jar")
+    }))
+}
+
+jar {
+    exclude 'hibernate.cfg.xml'
+    exclude 'credentials.properties'
+    exclude 'ftp.properties'
+    exclude 'ldap.properties'
+    exclude 'mail.properties'
+    exclude 'sap.properties'
+}

@@ -1,0 +1,75 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
+description = 'Model'
+
+configurations { apt }
+
+sourceSets {
+    main {
+        resources {
+            exclude '**/.gitignore'
+            exclude '**/logback.xml'
+            exclude '**/logback-test.xml'
+        }
+    }
+    test
+    generated
+}
+
+
+task generateAptSources(type: JavaCompile, group: 'build', description: 'Generates the QueryDSL query types') {
+    source = sourceSets.main.java
+    classpath = configurations.apt + sourceSets.main.compileClasspath
+    options.compilerArgs = [
+        '-proc:only',
+        '-processor',
+        'com.querydsl.apt.hibernate.HibernateAnnotationProcessor',
+        // Annotation Processor config options
+        '-Aquerydsl.entityAccessors=true'
+    ]
+    options.warnings = false
+    destinationDir = sourceSets.generated.java.srcDirs[0]
+    outputs.dir destinationDir
+}
+
+compileJava.source generateAptSources.outputs.files
+
+clean {
+    delete sourceSets.generated.java.srcDirs
+}
+
+dependencies {
+    compile project(':proj-shared-resources')
+    compile group: 'org.hibernate', name: 'hibernate-core', version:hibernateVersion
+    compile group: 'org.hibernate', name: 'hibernate-java8', version:hibernateVersion
+    compile group: 'org.slf4j', name: 'slf4j-api', version:slf4jVersion
+    runtime group: 'org.slf4j', name:'jcl-over-slf4j', version:slf4jVersion
+    runtime group: 'org.slf4j', name:'jul-to-slf4j', version:slf4jVersion
+    runtime group: 'org.slf4j', name:'log4j-over-slf4j', version:slf4jVersion
+    compile group: 'com.querydsl', name: 'querydsl-core', version:querydslVersion
+    compile group: 'com.querydsl', name: 'querydsl-jpa', version:querydslVersion
+    compileOnly group: 'javax.mail', name: 'mail', version:mailVersion
+    compileOnly group: 'javax.servlet', name: 'javax.servlet-api', version:servletApiVersion
+    testCompile group: 'org.powermock', name: 'powermock-api-mockito', version:'1.6.2'
+    testCompile group: 'org.powermock', name: 'powermock-module-testng', version:'1.6.2'
+    testCompile group: 'nl.jqno.equalsverifier', name: 'equalsverifier', version:equalsverifierVersion
+    testCompile group: 'org.apache.tomcat', name: 'tomcat-catalina', version:'8.0.24'
+    testCompile group: 'javax.mail', name: 'mail', version:mailVersion
+    testCompile group: 'org.hsqldb', name: 'hsqldb', version:hsqldbVersion
+
+    // this is only needed for auto code generation, not deployed
+    apt group: 'com.querydsl', name: 'querydsl-apt', version: querydslVersion
+    // this probably needs to be added as a gradle project dependency
+    // apt group: 'com.querydsl', name: 'querydsl-sql-codegen', version: querydslVersion
+}
+
+processResources {
+    filesNotMatching('**/*.ttf'){
+        filter (ReplaceTokens, tokens: [
+            "project.version": project.property('version')
+        ])
+    }
+    from(zipTree(project.configurations.compile.find { it.name.endsWith("shared-resources-${project.version}.jar") }))
+}
+
+jar { exclude 'hibernate.cfg.xml' }

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration >
+<!-- Copy this file to logback-test.xml to set up logging for your development environment.
+  See http://logback.qos.ch/manual/layouts.html#conversionWord for the enocoder patterns
+-->
+<configuration debug="false" scan="true" scanPeriod="1 minutes" packagingData="true">
+  <logger name="proj" level="trace">
+  </logger>
+  <logger name="org.quartz" level="error">
+  </logger>
+  <logger name="com.mchange.v2" level="error">
+  </logger>
+  <logger name="com.opensymphony.oscache" level="error">
+  </logger>
+
+  <!-- Don't specify an appender for these sub-logs as it can be specified below in the master hibernate logger -->
+  <!-- log HQL query parser activity -->
+  <logger name="org.hibernate.hql.ast.AST" level="off" />
+  <!-- log just the SQL -->
+  <logger name="org.hibernate.SQL" level="trace" />
+  <!-- log JDBC bind parameters -->
+  <logger name="org.hibernate.type" level="off" />
+  <!-- log schema export/update -->
+  <logger name="org.hibernate.tool.hbm2ddl" level="off" />
+  <!-- log HQL parse trees -->
+  <logger name="org.hibernate.hql" level="off" />
+  <!-- log cache activity -->
+  <logger name="org.hibernate.cache" level="off" />
+  <!-- log transaction activity -->
+  <logger name="org.hibernate.transaction" level="off" />
+  <!-- log JDBC resource acquisition -->
+  <logger name="org.hibernate.jdbc" level="off" />
+  <!-- Track down connection leakages when using DriverManagerConnectionProvider -->
+  <logger name="org.hibernate.connection.DriverManagerConnectionProvider" level="off" />
+  <!-- log everything else hibernate related but not defined above -->
+  <logger name="org.hibernate" level="off">
+    <!-- appender-ref ref="hibfile"/ -->
+  </logger>
+  <logger name="com.querydsl" level="off">
+    <!-- appender-ref ref="hibfile"/ -->
+  </logger>
+
+
+  <!-- Root logger that defines defaults for all loggers -->
+  <!-- Appenders are addative (unless additivity="false" is set),
+    so if you uncomment the appenders for the above loggers,
+    they'll go to console as well
+    In tomcat this goes to catalina.out by default.
+
+    If you instead want this to be an "everything else that isn't defined" logger,
+    move it to the be the first logger in the file. Then only unnamed loggers will
+    go to the root. All other loggers will ONLY go to their defined appenders.
+  -->
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <target>System.out</target>
+    <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+      <evaluator>
+        <expression>return level &lt; WARN;</expression>
+      </evaluator>
+      <OnMatch>ACCEPT</OnMatch>
+      <OnMismatch>DENY</OnMismatch>
+    </filter>
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %C{20}.%M:%L - %msg%n</pattern>
+    </encoder>
+  </appender>
+  <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
+    <target>System.err</target>
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>WARN</level>
+    </filter>
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %C{20}.%M:%L - %msg%n</pattern>
+    </encoder>
+  </appender>
+  <root level="trace">
+    <appender-ref ref="STDOUT" />
+    <appender-ref ref="STDERR" />
+  </root>
+  <!-- end root logger -->
+</configuration>

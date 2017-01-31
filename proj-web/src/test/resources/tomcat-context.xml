@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Context path="/project">
+  <Resource
+    name="jdbc/Project"
+    auth="Container"
+    factory="org.apache.naming.factory.BeanFactory"
+    type="com.mchange.v2.c3p0.ComboPooledDataSource"
+    jdbcUrl="jdbc:mysql://localhost:3306/project_dev-branch?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false"
+    driverClass="com.mysql.jdbc.Driver"
+    user="project"
+    password="project"
+    acquireIncrement="1"
+    idleConnectionTestPeriod="100"
+    maxPoolSize="100"
+    maxStatements="100"
+    minPoolSize="10" />
+
+  <Resource
+    name="mail/Session"
+    auth="Container"
+    type="javax.mail.Session"
+    mail.smtp.host="localhost"
+    mail.from="dev@test.com" />
+  <!-- auth="Container" -->
+  <!-- mail.transport.protocol="smtp" -->
+  <!-- mail.smtp.from="donotreply@test.com" -->
+  <!-- mail.smtp.auth="true" -->
+  <!-- mail.smtp.user="testing" -->
+  <!-- mail.smtp.password="testing" -->
+
+  <!-- mail.debug="false" -->
+  <!-- username="secret" -->
+  <!-- password="secret" -->
+</Context> 

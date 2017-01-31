@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suppressions PUBLIC
+"-//Puppy Crawl//DTD Suppressions 1.1//EN"
+"http://users.tpg.com.au/ojburn/dtds/suppressions_1_1.dtd">
+
+<suppressions>
+  <!-- Suppress Package level javadoc under test -->
+  <suppress checks="JavadocPackage|MagicNumber|ParameterNumber|TypeName" files=".*[/\\]test[/\\].*" />
+  <!-- Suppress files under target -->
+  <suppress checks=".*" files=".*[/\\]target[/\\].*" />
+  <suppress checks=".*" files=".*\.(jpg|jpeg|png|gif|xcf|psd)" />
+  <!-- suppress block check for ignored exception -->
+  <suppress checks="MagicNumber" files=".*[/\\]NumberToEnglish.java" />
+  <suppress checks="MagicNumber" files=".*[/\\]model[/\\].*" />
+  <!-- ignore parameter object visibility warnings -->
+  <suppress checks="VisibilityModifierCheck" files=".*[/\\]core[/\\]managers[/\\]parameter[/\\].*" />
+</suppressions>

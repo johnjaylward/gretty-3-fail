@@ -1,0 +1,12 @@
+rootProject.name = 'gretty-3-fail'
+include ':proj-shared-resources'
+include ':proj-model'
+include ':proj-core'
+include ':proj-command'
+include ':proj-web'
+
+project(':proj-shared-resources').projectDir = "$rootDir/proj-shared-resources" as File
+project(':proj-model').projectDir = "$rootDir/proj-model" as File
+project(':proj-core').projectDir = "$rootDir/proj-core" as File
+project(':proj-command').projectDir = "$rootDir/proj-command" as File
+project(':proj-web').projectDir = "$rootDir/proj-web" as File
